@@ -22,6 +22,7 @@ def supabase_headers():
 # =========================================================
 def load_status():
     try:
+        # URL encode the column names with spaces
         url = f"{SUPABASE_URL}/rest/v1/{TABLE_NAME}?id=eq.{ROW_ID}&select=*"
         response = requests.get(url, headers=supabase_headers(), timeout=10)
         response.raise_for_status()
@@ -35,9 +36,9 @@ def load_status():
             }
         row = rows[0]
         return {
-            "is_open": bool(row.get("is_open", False)),
+            "is_open": bool(row.get("is open", False)),  # FIX: "is open" with space
             "reason": row.get("reason", "") or "",
-            "updated_at": row.get("updated_at", "") or "",
+            "updated_at": row.get("updated _at", "") or "",  # FIX: "updated _at" with space
             "error": None,
         }
     except Exception as e:
@@ -51,9 +52,9 @@ def load_status():
 def save_status(is_open: bool, reason: str):
     url = f"{SUPABASE_URL}/rest/v1/{TABLE_NAME}?id=eq.{ROW_ID}"
     payload = {
-        "is_open": is_open,
+        "is open": is_open,  # FIX: "is open" with space
         "reason": reason,
-        "updated_at": datetime.utcnow().isoformat(),
+        "updated _at": datetime.utcnow().isoformat(),  # FIX: "updated _at" with space
     }
     headers = supabase_headers()
     headers["Prefer"] = "return=representation"
