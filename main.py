@@ -2,18 +2,21 @@ import os
 import flet as ft
 import requests
 from datetime import datetime
+
 APP_TITLE = "Piedmont Pool Status"
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "piedmont123")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://jvkeepbtrkkevrlfimhy.supabase.co")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "sb_publishable_856m_EwS_TeYlbze04OXgw_i5gNDuiY")
 TABLE_NAME = "pool_status"
 ROW_ID = 1
+
 def supabase_headers():
     return {
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
         "Content-Type": "application/json",
     }
+
 # =========================================================
 # CONFIG
 # =========================================================
@@ -44,6 +47,7 @@ def load_status():
             "updated_at": "",
             "error": str(e),
         }
+
 def save_status(is_open: bool, reason: str):
     url = f"{SUPABASE_URL}/rest/v1/{TABLE_NAME}?id=eq.{ROW_ID}"
     payload = {
@@ -56,6 +60,7 @@ def save_status(is_open: bool, reason: str):
     response = requests.patch(url, headers=headers, json=payload, timeout=10)
     response.raise_for_status()
     return response.json()
+
 def main(page: ft.Page):
     page.title = APP_TITLE
     page.theme_mode = ft.ThemeMode.LIGHT
@@ -64,6 +69,7 @@ def main(page: ft.Page):
     page.padding = 20
     page.window_width = 400
     page.window_height = 800
+
     title = ft.Text("Piedmont Pool", size=28, weight=ft.FontWeight.BOLD)
     subtitle = ft.Text("Huntsville, AL", size=16, color=ft.Colors.GREY_700)
     pool_icon = ft.Text("🏊", size=56)
@@ -71,6 +77,7 @@ def main(page: ft.Page):
     reason_text = ft.Text(size=16, text_align=ft.TextAlign.CENTER)
     updated_text = ft.Text(size=12, color=ft.Colors.GREY_600, text_align=ft.TextAlign.CENTER)
     error_text_main = ft.Text("", color=ft.Colors.RED_700, text_align=ft.TextAlign.CENTER)
+
     status_card = ft.Container(
         width=320,
         padding=20,
@@ -86,6 +93,7 @@ def main(page: ft.Page):
             spacing=10,
         ),
     )
+
     def refresh_ui():
         data = load_status()
         if data["error"]:
@@ -110,6 +118,10 @@ def main(page: ft.Page):
             reason_text.value = f"Reason: {reason}" if reason else "Check back later."
         updated_text.value = f"Last updated: {updated_at}" if updated_at else ""
         page.update()
+
+    # =========================================================
+    # ADMIN PANEL COMPONENTS
+    # =========================================================
     password_input = ft.TextField(
         label="Admin Password",
         password=True,
@@ -125,76 +137,57 @@ def main(page: ft.Page):
         width=280,
     )
     admin_error = ft.Text("", color=ft.Colors.RED_700)
+
     def sync_reason_visibility():
         reason_input.visible = not open_switch.value
+
     def on_switch_change(e):
         sync_reason_visibility()
         page.update()
+
     open_switch.on_change = on_switch_change
+
     def close_dialog(e=None):
         admin_dialog.open = False
         page.update()
-        
-    def save_admin_changes(e):
-     admin_error.value = ""
-    password_input.error_text = None
-    
-    if password_input.value != ADMIN_PASSWORD:
-        password_input.error_text = "Incorrect password"
-        page.update()
-        return
-    
-    try:
-        # Get the current values from UI
-        is_open = pool_open_toggle.value
-        closure_reason = closure_reason_input.value or "No reason provided"
-        
-        # Prepare the update data
-        update_data = {
-            "status": "Open" if is_open else "Closed",
-            "closure_reason": closure_reason
-        }
-        
-        # Make the API request to Supabase
-        response = requests.patch(
-            f"{SUPABASE_URL}/rest/v1/pool_status?id=eq.1",
-            headers={
-                "apikey": SUPABASE_KEY,
-                "Content-Type": "application/json",
-                "Prefer": "return=minimal"
-            },
-            json=update_data
-        )
-        
-        if response.status_code in [200, 204]:
-            admin_error.value = "✅ Changes saved successfully!"
-            admin_error.color = "green"
-            page.update()
-            
-            # Close dialog after 1.5 seconds
-            import time
-            time.sleep(1.5)
-            admin_dialog.open = False
-            
-            # Refresh the main status display
-            load_pool_status()
-            page.update()
-        else:
-            admin_error.value = f"❌ Error saving: {response.status_code} - {response.text}"
-            admin_error.color = "red"
-            page.update()
-    
-    except Exception as ex:
-        admin_error.value = f"❌ Error: {str(ex)}"
-        admin_error.color = "red"
-        page.update()
 
-    
-    except Exception as ex:
-        admin_error.value = f"❌ Error: {str(ex)}"
-        admin_error.color = "red"
-        page.update()
+    def save_admin_changes(e):
+        """Save admin changes to Supabase"""
+        admin_error.value = ""
+        password_input.error_text = None
+
+        # Validate password
+        if password_input.value != ADMIN_PASSWORD:
+            password_input.error_text = "Incorrect password"
+            page.update()
+            return
+
+        try:
+            # Get values from UI
+            is_open = open_switch.value
+            closure_reason = reason_input.value or ""
+
+            # Use the existing save_status function
+            save_status(is_open, closure_reason)
+
+            # Success feedback
+            admin_error.value = "✅ Changes saved successfully!"
+            admin_error.color = ft.Colors.GREEN_700
+            page.update()
+
+            # Close dialog and refresh after 1 second
+            import time
+            time.sleep(1)
+            close_dialog()
+            refresh_ui()
+
+        except Exception as ex:
+            admin_error.value = f"❌ Error: {str(ex)}"
+            admin_error.color = ft.Colors.RED_700
+            page.update()
+
     def open_admin_dialog(e):
+        """Open the admin login dialog"""
         current = load_status()
         password_input.value = ""
         password_input.error_text = None
@@ -204,6 +197,7 @@ def main(page: ft.Page):
         sync_reason_visibility()
         admin_dialog.open = True
         page.update()
+
     admin_dialog = ft.AlertDialog(
         modal=True,
         title=ft.Text("Admin Control Panel"),
@@ -223,6 +217,10 @@ def main(page: ft.Page):
         ],
     )
     page.overlay.append(admin_dialog)
+
+    # =========================================================
+    # MAIN UI
+    # =========================================================
     refresh_button = ft.FilledButton(
         "Refresh Status",
         on_click=lambda e: refresh_ui(),
@@ -233,6 +231,7 @@ def main(page: ft.Page):
         on_click=open_admin_dialog,
         width=220,
     )
+
     page.add(
         ft.Column(
             [
@@ -249,9 +248,10 @@ def main(page: ft.Page):
             spacing=10,
         )
     )
+
     refresh_ui()
+
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 8550))
     ft.run(
         main,
