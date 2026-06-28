@@ -134,21 +134,66 @@ def main(page: ft.Page):
     def close_dialog(e=None):
         admin_dialog.open = False
         page.update()
+        
     def save_admin_changes(e):
-        admin_error.value = ""
-        password_input.error_text = None
-        if password_input.value != ADMIN_PASSWORD:
-            password_input.error_text = "Incorrect password"
+     admin_error.value = ""
+    password_input.error_text = None
+    
+    if password_input.value != ADMIN_PASSWORD:
+        password_input.error_text = "Incorrect password"
+        page.update()
+        return
+    
+    try:
+        # Get the current values from UI
+        is_open = pool_open_toggle.value
+        closure_reason = closure_reason_input.value or "No reason provided"
+        
+        # Prepare the update data
+        update_data = {
+            "status": "Open" if is_open else "Closed",
+            "closure_reason": closure_reason
+        }
+        
+        # Make the API request to Supabase
+        response = requests.patch(
+            f"{SUPABASE_URL}/rest/v1/pool_status?id=eq.1",
+            headers={
+                "apikey": SUPABASE_KEY,
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal"
+            },
+            json=update_data
+        )
+        
+        if response.status_code in [200, 204]:
+            admin_error.value = "✅ Changes saved successfully!"
+            admin_error.color = "green"
             page.update()
-            return
-        try:
-            final_reason = "" if open_switch.value else (reason_input.value.strip() or "Closed")
-            save_status(open_switch.value, final_reason)
+            
+            # Close dialog after 1.5 seconds
+            import time
+            time.sleep(1.5)
             admin_dialog.open = False
-            refresh_ui()
-        except Exception as e:
-            admin_error.value = str(e)
+            
+            # Refresh the main status display
+            load_pool_status()
             page.update()
+        else:
+            admin_error.value = f"❌ Error saving: {response.status_code} - {response.text}"
+            admin_error.color = "red"
+            page.update()
+    
+    except Exception as ex:
+        admin_error.value = f"❌ Error: {str(ex)}"
+        admin_error.color = "red"
+        page.update()
+
+    
+    except Exception as ex:
+        admin_error.value = f"❌ Error: {str(ex)}"
+        admin_error.color = "red"
+        page.update()
     def open_admin_dialog(e):
         current = load_status()
         password_input.value = ""
