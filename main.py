@@ -2,6 +2,7 @@ import os
 import flet as ft
 import requests
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 APP_TITLE = "Piedmont Pool Status"
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "piedmont123")
@@ -62,6 +63,19 @@ def save_status(is_open: bool, reason: str):
     response.raise_for_status()
     return response.json()
 
+def format_datetime(iso_string: str) -> str:
+    """Convert a stored UTC ISO timestamp into a friendly local time string."""
+    if not iso_string:
+        return ""
+    try:
+        dt = datetime.fromisoformat(iso_string)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+        local_dt = dt.astimezone(ZoneInfo("America/Chicago"))
+        return local_dt.strftime("%b %d, %Y at %I:%M %p").replace(" 0", " ")
+    except Exception:
+        return iso_string
+
 def main(page: ft.Page):
     page.title = APP_TITLE
     page.theme_mode = ft.ThemeMode.LIGHT
@@ -117,7 +131,7 @@ def main(page: ft.Page):
             status_card.bgcolor = ft.Colors.RED_400
             status_text.value = "POOL IS CLOSED"
             reason_text.value = f"Reason: {reason}" if reason else "Check back later."
-        updated_text.value = f"Last updated: {updated_at}" if updated_at else ""
+        updated_text.value = f"Last updated: {format_datetime(updated_at)}" if updated_at else ""
         page.update()
 
     # =========================================================
