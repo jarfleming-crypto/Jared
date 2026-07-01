@@ -55,7 +55,7 @@ def save_status(is_open: bool, reason: str):
     payload = {
         "is open": is_open,  # FIX: "is open" with space
         "reason": reason,
-        "updated _at": datetime.utcnow().isoformat(),  # FIX: "updated _at" with space
+         "updated _at": datetime.utcnow().isoformat(),
     }
     headers = supabase_headers()
     headers["Prefer"] = "return=representation"
