@@ -5,7 +5,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 APP_TITLE = "Piedmont Pool Status"
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "piedmont123")
+ADMIN_PASSWORD = os.environ.get("Update Status", "piedmont123")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://jvkeepbtrkkevrlfimhy.supabase.co")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "sb_publishable_856m_EwS_TeYlbze04OXgw_i5gNDuiY")
 TABLE_NAME = "pool_status"
@@ -137,13 +137,7 @@ def main(page: ft.Page):
     # =========================================================
     # ADMIN PANEL COMPONENTS
     # =========================================================
-    password_input = ft.TextField(
-        label="Admin Password",
-        password=True,
-        can_reveal_password=True,
-        width=280,
-    )
-    open_switch = ft.Switch(label="Pool Open", value=False)
+        open_switch = ft.Switch(label="Pool Open", value=False)
     reason_input = ft.TextField(
         label="Reason for Closing",
         multiline=True,
@@ -169,13 +163,7 @@ def main(page: ft.Page):
     def save_admin_changes(e):
         """Save admin changes to Supabase"""
         admin_error.value = ""
-        password_input.error_text = None
 
-        # Validate password
-        if password_input.value != ADMIN_PASSWORD:
-            password_input.error_text = "Incorrect password"
-            page.update()
-            return
 
         try:
             # Get values from UI
@@ -202,10 +190,8 @@ def main(page: ft.Page):
             page.update()
 
     def open_admin_dialog(e):
-        """Open the admin login dialog"""
+        """Open the admin panel"""
         current = load_status()
-        password_input.value = ""
-        password_input.error_text = None
         admin_error.value = ""
         open_switch.value = current.get("is_open", False)
         reason_input.value = current.get("reason", "")
@@ -218,7 +204,6 @@ def main(page: ft.Page):
         title=ft.Text("Admin Control Panel"),
         content=ft.Column(
             [
-                password_input,
                 open_switch,
                 reason_input,
                 admin_error,
