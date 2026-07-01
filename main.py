@@ -137,7 +137,10 @@ def main(page: ft.Page):
     # =========================================================
     # ADMIN PANEL COMPONENTS
     # =========================================================
-        open_switch = ft.Switch(label="Pool Open", value=False)
+        # =========================================================
+    # ADMIN PANEL COMPONENTS
+    # =========================================================
+    open_switch = ft.Switch(label="Pool Open", value=False)
     reason_input = ft.TextField(
         label="Reason for Closing",
         multiline=True,
